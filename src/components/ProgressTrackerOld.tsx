@@ -30,9 +30,6 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ roomId, room }) => {
   // 실시간 진도 데이터 훅 사용
   const { goal, roadmap, stats, sessions, isLoading, error, completeStep, updateProgress } = useProgressData(roomId)
 
-  // 디버깅용 로그
-  console.log('ProgressTracker 상태:', { goal, roadmap, stats, isLoading, error })
-
   const getProgressPercentage = () => {
     return stats.totalProgress
   }
@@ -140,7 +137,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ roomId, room }) => {
               </div>
 
               <div className="text-xs text-gray-500">
-                {stats.completedSteps}/{stats.totalSteps} 단계 완료
+                목표: {room.goal}
               </div>
             </div>
 
@@ -158,14 +155,14 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ roomId, room }) => {
                 {getTotalStudyHours()}시간
               </div>
               <div className="text-sm text-gray-600 mb-4">
-                이번 주 +{stats.weeklyHours}시간
+                이번 주 +0시간
               </div>
 
               <div className="flex items-center text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full w-fit">
                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                {getTotalStudyHours() > 0 ? '좋은 진전!' : '꾸준한 학습을 시작해보세요!'}
+                꾸준한 학습을 시작해보세요!
               </div>
             </div>
 
@@ -183,174 +180,69 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ roomId, room }) => {
                 {getCurrentStreak()}일
               </div>
               <div className="text-sm text-gray-600 mb-4">
-                최고 기록: {getCurrentStreak()}일
+                최고 기록: 0일
               </div>
 
               <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full w-fit">
-                {getCurrentStreak() > 0 ? '연속 학습 중!' : '오늘부터 연속 학습을 시작하세요!'}
+                오늘부터 연속 학습을 시작하세요!
               </div>
             </div>
           </div>
 
           {/* 학습 목표 카드 */}
-          {goal && (
-            <div className="card-premium p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">현재 학습 목표</h3>
-                <Button variant="ghost" size="sm" className="hover:bg-gray-100">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  목표 수정
-                </Button>
-              </div>
-
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl">
-                    {room.goal_type === 'certification' ? '🏆' : '🎨'}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">{goal.title}</h4>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">목표:</span>
-                        <span>{goal.description}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">분야:</span>
-                        <span>{room.category} - {room.subject}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">완료 예정:</span>
-                        <span>{goal.target_date ? new Date(goal.target_date).toLocaleDateString('ko-KR') : '미설정'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 학습 로드맵 진도 */}
-          {roadmap && roadmap.steps && Array.isArray(roadmap.steps) && (
-            <div className="card-premium p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">학습 로드맵 진도</h3>
-                <div className="text-sm text-gray-600">
-                  {stats.completedSteps} / {stats.totalSteps} 단계 완료
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {roadmap.steps.map((step: any, index: number) => {
-                  const isCompleted = index < stats.completedSteps
-                  const isCurrent = index === stats.completedSteps
-                  const isPending = index > stats.completedSteps
-
-                  return (
-                    <div key={step.id || index} className="relative">
-                      {/* 연결선 */}
-                      {index < roadmap.steps.length - 1 && (
-                        <div className="absolute left-6 top-12 w-0.5 h-8 bg-gray-200" />
-                      )}
-
-                      <div className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-300 ${
-                        isCompleted
-                          ? 'bg-green-50 border-green-200'
-                          : isCurrent
-                          ? 'bg-blue-50 border-blue-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        {/* 상태 아이콘 */}
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${
-                          isCompleted
-                            ? 'bg-green-500'
-                            : isCurrent
-                            ? 'bg-blue-500'
-                            : 'bg-gray-400'
-                        }`}>
-                          {isCompleted ? '✓' : index + 1}
-                        </div>
-
-                        {/* 단계 정보 */}
-                        <div className="flex-1">
-                          <h4 className={`font-semibold mb-2 ${
-                            isCompleted ? 'text-green-900' : isCurrent ? 'text-blue-900' : 'text-gray-700'
-                          }`}>
-                            {step.title}
-                          </h4>
-                          <p className={`text-sm mb-3 ${
-                            isCompleted ? 'text-green-700' : isCurrent ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            {step.description}
-                          </p>
-
-                          <div className="flex items-center gap-4 text-xs">
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {step.estimatedHours}시간
-                            </span>
-                            <span className={`px-2 py-1 rounded-full ${
-                              isCompleted
-                                ? 'bg-green-100 text-green-700'
-                                : isCurrent
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {isCompleted ? '완료' : isCurrent ? '진행중' : '대기중'}
-                            </span>
-                          </div>
-
-                          {/* 현재 단계에서만 완료 버튼 표시 */}
-                          {isCurrent && (
-                            <div className="mt-3">
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                className="bg-blue-500 hover:bg-blue-600 text-white"
-                                onClick={() => completeStep(step.id)}
-                              >
-                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                단계 완료
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 목표가 설정되지 않은 경우 */}
-          {!goal && (
-            <div className="card-premium text-center py-16">
-              <div className="w-20 h-20 mx-auto mb-6 gradient-primary rounded-3xl flex items-center justify-center text-white text-3xl">
-                📚
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">학습 목표를 설정해주세요!</h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                AI 튜터와 대화하여 맞춤형 학습 목표를 설정하면<br />
-                진도 추적이 시작됩니다.
-              </p>
-              <Button
-                variant="primary"
-                className="gradient-primary text-white shadow-colored hover:shadow-lg transition-all duration-300"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <div className="card-premium p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">현재 학습 목표</h3>
+              <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                AI 튜터와 대화하기
+                목표 수정
               </Button>
             </div>
-          )}
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl">
+                  {room.goal_type === 'certification' ? '🏆' : '🎨'}
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">{room.goal}</h4>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">분야:</span>
+                      <span>{room.category} - {room.subject}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">유형:</span>
+                      <span>{room.goal_type === 'certification' ? '자격증 취득' : '스킬 향상'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 빈 상태 메시지 */}
+          <div className="card-premium text-center py-16">
+            <div className="w-20 h-20 mx-auto mb-6 gradient-primary rounded-3xl flex items-center justify-center text-white text-3xl">
+              📚
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">학습을 시작해보세요!</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              AI 튜터와 대화하며 학습하면 자동으로 진도가 기록됩니다.<br />
+              첫 번째 질문을 해보세요!
+            </p>
+            <Button
+              variant="primary"
+              className="gradient-primary text-white shadow-colored hover:shadow-lg transition-all duration-300"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            AI 튜터와 대화하기
+            </Button>
+          </div>
         </div>
       )}
 

@@ -34,7 +34,7 @@ const AuthPage: React.FC = () => {
               <span className="text-blue-500">개인 맞춤</span> 학습
             </h1>
             <p className="text-headline text-text-secondary mb-xl">
-              정보처리기사부터 다양한 자격증까지,<br />
+              자격증 취득부터 취미 스킬 향상까지,<br />
               AI 튜터가 당신만의 학습 계획을 세워드립니다.
             </p>
 
