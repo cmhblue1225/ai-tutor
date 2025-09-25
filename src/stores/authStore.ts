@@ -11,6 +11,10 @@ interface AuthStore extends AuthState {
   signOut: () => Promise<void>
   updateProfile: (updates: Partial<Profile>) => Promise<{ success: boolean; error?: string }>
 
+  // Admin functions
+  isAdmin: () => boolean
+  checkAdminAccess: () => boolean
+
   // State setters
   setUser: (user: User | null) => void
   setProfile: (profile: Profile | null) => void
@@ -189,6 +193,17 @@ export const useAuthStore = create<AuthStore>()(
           set({ loading: false })
           return { success: false, error: error.message }
         }
+      },
+
+      // Admin functions
+      isAdmin: () => {
+        const { user } = get()
+        return user?.email === 'admin@test.com'
+      },
+
+      checkAdminAccess: () => {
+        const { user, initialized } = get()
+        return initialized && user?.email === 'admin@test.com'
       },
 
       // Setters

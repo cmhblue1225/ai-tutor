@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
@@ -15,7 +16,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const { signIn, loading } = useAuthStore()
+  const navigate = useNavigate()
+  const { signIn, loading, isAdmin } = useAuthStore()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -53,6 +55,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
 
     if (!result.success) {
       setErrors({ general: result.error || '로그인에 실패했습니다' })
+    } else {
+      // 로그인 성공 후 관리자면 /admin으로, 일반 사용자면 /dashboard로 리다이렉트
+      if (isAdmin()) {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     }
   }
 

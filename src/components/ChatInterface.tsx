@@ -5,6 +5,7 @@ import Input from './ui/Input'
 import type { StudyRoom } from '../lib/studyRooms'
 import { aiClient } from '../lib/ai/client'
 import { generateSystemPrompt, generateWelcomeMessage } from '../lib/ai/prompts'
+import { hybridRagClient } from '../lib/ai/hybridRagClient'
 import { getConversations, saveConversation, conversationsToMessages } from '../lib/conversations'
 import { GoalSettingWorkflow, type ConcreteGoal } from '../lib/ai/goalSetting'
 import { GoalManager } from '../lib/learning/goalManager'
@@ -15,6 +16,13 @@ interface Message {
   content: string
   timestamp: Date
   isTyping?: boolean
+  sources?: Array<{
+    type: 'file' | 'web'
+    title: string
+    url?: string
+    snippet: string
+    similarity?: number
+  }>
 }
 
 interface ChatInterfaceProps {
@@ -230,29 +238,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ roomId, room }) => {
           setConversationHistory([{ role: 'system', content: systemPrompt }])
         }
       } else {
-        // 일반 AI 튜터 모드
-        const messagesForAI = conversationHistory.concat([
-          { role: 'user', content: userMessage.content }
-        ])
+        // 정보처리기사 특화 하이브리드 RAG 모드
+        const subjectId = room.subject === '정보처리기사' ? 'software_design' : 'software_design' // 기본값
 
-        // OpenAI API 호출
-        const aiResponse = await aiClient.getChatResponse(messagesForAI, {
-          model: 'gpt-4o-mini',
-          temperature: 0.7,
-          max_tokens: 1000
-        })
+        const hybridResponse = await hybridRagClient.generateResponse(
+          userMessage.content,
+          conversationHistory,
+          subjectId
+        )
+
+        // 소스 정보 변환
+        const sources = hybridResponse.sources?.map(source => ({
+          type: source.type as 'file' | 'web',
+          title: source.title || source.file_name || 'Unknown Source',
+          url: source.url,
+          snippet: source.snippet || source.content?.substring(0, 200) + '...',
+          similarity: source.similarity
+        })) || []
 
         assistantMessage = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: aiResponse.content,
-          timestamp: new Date()
+          content: hybridResponse.response,
+          timestamp: new Date(),
+          sources: sources
         }
 
         // 대화 히스토리 업데이트
         setConversationHistory(prev => prev.concat([
           { role: 'user', content: userMessage.content },
-          { role: 'assistant', content: aiResponse.content }
+          { role: 'assistant', content: hybridResponse.response }
         ]))
       }
 
@@ -326,9 +341,54 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ roomId, room }) => {
                     <span className="text-sm text-gray-500 ml-2">AI 튜터가 입력 중...</span>
                   </div>
                 ) : (
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                    {message.content}
-                  </pre>
+                  <div>
+                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                      {message.content}
+                    </pre>
+
+                    {/* 소스 정보 표시 */}
+                    {message.sources && message.sources.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="text-xs text-gray-600 mb-2 font-medium">📚 참고 자료:</div>
+                        <div className="space-y-2">
+                          {message.sources.map((source, index) => (
+                            <div key={index} className="bg-gray-50 rounded p-2 text-xs">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                                  source.type === 'file'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-green-100 text-green-700'
+                                }`}>
+                                  {source.type === 'file' ? '📄 파일' : '🌐 웹'}
+                                </span>
+                                <span className="font-medium text-gray-700">
+                                  {source.title}
+                                </span>
+                                {source.similarity && (
+                                  <span className="text-gray-500">
+                                    ({Math.round(source.similarity * 100)}% 유사)
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-gray-600 leading-relaxed">
+                                {source.snippet}
+                              </p>
+                              {source.url && (
+                                <a
+                                  href={source.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 hover:text-blue-700 underline"
+                                >
+                                  원문 보기 →
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -396,7 +456,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ roomId, room }) => {
             <span>💡 Shift + Enter로 줄바꿈</span>
             <span>⚡ Enter로 전송</span>
           </div>
-          <span>{isGoalSetting ? '🎯 목표 설정 진행 중' : `${room.subject} AI 튜터`}</span>
+          <span>{isGoalSetting ? '🎯 목표 설정 진행 중' : `🤖 ${room.subject} 하이브리드 RAG 튜터`}</span>
         </div>
       </div>
     </div>
