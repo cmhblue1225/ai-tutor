@@ -7,6 +7,9 @@ import Card from '../components/ui/Card'
 import ChatInterface from '../components/ChatInterface'
 import ProgressTracker from '../components/ProgressTracker'
 import StudyMaterialViewer from '../components/StudyMaterialViewer'
+import NotificationToast from '../components/NotificationToast'
+import { useTabNotifications } from '../hooks/useTabNotifications'
+import CacheDebugPanel from '../components/CacheDebugPanel'
 
 const StudyRoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>()
@@ -17,6 +20,16 @@ const StudyRoomPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chat' | 'progress' | 'materials'>('chat')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // 탭 알림 시스템
+  const {
+    notifications,
+    badges,
+    clearTabBadge,
+    removeNotification,
+    getTabBadge,
+    getSuggestedTab
+  } = useTabNotifications(roomId || '')
 
   useEffect(() => {
     if (!user?.id || !roomId) {
@@ -54,6 +67,27 @@ const StudyRoomPage: React.FC = () => {
 
   const getGoalTypeText = (goalType: 'certification' | 'skill_improvement') => {
     return goalType === 'certification' ? '자격증 취득' : '스킬 향상'
+  }
+
+  // 탭 전환 핸들러 (배지 클리어 포함)
+  const handleTabChange = (tabId: 'chat' | 'progress' | 'materials') => {
+    setActiveTab(tabId)
+    clearTabBadge(tabId) // 탭 전환 시 해당 탭의 배지 클리어
+  }
+
+  // 탭 배지 렌더링
+  const renderTabBadge = (tabId: 'chat' | 'progress' | 'materials') => {
+    const badge = getTabBadge(tabId)
+    if (!badge) return null
+
+    const badgeColor = badge.type === 'new' ? 'bg-green-500' :
+                      badge.type === 'achievement' ? 'bg-yellow-500' : 'bg-blue-500'
+
+    return (
+      <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-bounce-once`}>
+        {badge.count}
+      </span>
+    )
   }
 
   const tabs = [
@@ -181,8 +215,8 @@ const StudyRoomPage: React.FC = () => {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-4 border-b-2 transition-all duration-200 ${
+                onClick={() => handleTabChange(tab.id)}
+                className={`relative flex items-center gap-2 px-4 py-4 border-b-2 transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600 bg-blue-50/50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50/50'
@@ -190,6 +224,7 @@ const StudyRoomPage: React.FC = () => {
               >
                 {tab.icon}
                 <span className="font-medium">{tab.name}</span>
+                {renderTabBadge(tab.id)}
               </button>
             ))}
           </div>
@@ -210,6 +245,55 @@ const StudyRoomPage: React.FC = () => {
           <StudyMaterialViewer roomId={room.id} room={room} />
         )}
       </main>
+
+      {/* 알림 토스트 컨테이너 */}
+      <div className="fixed top-20 right-4 z-50 space-y-3 max-w-sm">
+        {notifications.map((notification) => (
+          <NotificationToast
+            key={notification.id}
+            notification={notification}
+            onRemove={removeNotification}
+            onTabSwitch={handleTabChange}
+          />
+        ))}
+      </div>
+
+      {/* 탭 전환 추천 배너 */}
+      {getSuggestedTab() && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-w-md mx-auto animate-slide-in-right">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  {getSuggestedTab()!.reason}
+                </p>
+                <button
+                  onClick={() => handleTabChange(getSuggestedTab()!.tab)}
+                  className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full hover:bg-blue-600 transition-colors"
+                >
+                  {tabs.find(tab => tab.id === getSuggestedTab()!.tab)?.name} 확인하기
+                </button>
+              </div>
+              <button
+                onClick={() => {}} // getSuggestedTab를 숨기는 로직 필요 시 추가
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 개발용 캐시 디버그 패널 */}
+      <CacheDebugPanel />
     </div>
   )
 }
