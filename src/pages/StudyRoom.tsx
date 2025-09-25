@@ -10,6 +10,7 @@ import StudyMaterialViewer from '../components/StudyMaterialViewer'
 import NotificationToast from '../components/NotificationToast'
 import { useTabNotifications } from '../hooks/useTabNotifications'
 import CacheDebugPanel from '../components/CacheDebugPanel'
+import RAGManager from '../components/RAGManager'
 
 const StudyRoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>()
@@ -20,6 +21,7 @@ const StudyRoomPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chat' | 'progress' | 'materials'>('chat')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showRAGManager, setShowRAGManager] = useState(false)
 
   // 탭 알림 시스템
   const {
@@ -196,10 +198,12 @@ const StudyRoomPage: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => setShowRAGManager(true)}
                 className="hover:bg-gray-100"
+                title="RAG 시스템 관리"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-.42-.26l-.408-.245a2 2 0 01-.769-.477l-.537-.537a2 2 0 00-.769-.477l-.408-.245a6 6 0 00-.42-.26l-2.387-.477a2 2 0 00-1.022.547L7.572 15.428a2 2 0 00-.547 1.022l-.477 2.387a6 6 0 00.26.42l.245.408a2 2 0 01.477.769l.537.537a2 2 0 00.477.769l.245.408a6 6 0 00.26.42l.477 2.387a2 2 0 00.547 1.022L10.428 20.428a2 2 0 001.022.547l2.387.477a6 6 0 00.42-.26l.408-.245a2 2 0 01.769-.477l.537-.537a2 2 0 00.769-.477l.408-.245a6 6 0 00.42-.26l2.387-.477a2 2 0 001.022-.547L19.428 16.572a2 2 0 00.547-1.022l.477-2.387a6 6 0 00-.26-.42l-.245-.408a2 2 0 01-.477-.769l-.537-.537a2 2 0 00-.477-.769l-.245-.408a6 6 0 00-.26-.42l-.477-2.387a2 2 0 00-.547-1.022z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </Button>
@@ -290,6 +294,11 @@ const StudyRoomPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* RAG 관리자 모달 */}
+      {showRAGManager && (
+        <RAGManager onClose={() => setShowRAGManager(false)} />
       )}
 
       {/* 개발용 캐시 디버그 패널 */}
